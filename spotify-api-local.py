@@ -11,7 +11,7 @@ app.secret_key = 'df3038ecd2e7433a98617c3cb55f1887123456'
 
 CLIENT_ID = 'df3038ecd2e7433a98617c3cb55f1887'
 CLIENT_SECRET = 'fb9dcaa8bdcf442ab7437332ac00dbb2'
-REDIRECT_URI = 'https://my-spotify-favorites.vercel.app/callback'
+REDIRECT_URI = 'http://localhost:5000/callback'
 
 AUTH_URL = 'https://accounts.spotify.com/authorize'
 TOKEN_URL = 'https://accounts.spotify.com/api/token'
@@ -135,7 +135,7 @@ def refresh_token():
     session['access_token'] = new_token_info['access_token']
     session['expires_at'] = datetime.datetime.now().timestamp() + new_token_info['expires_in']
 
-    return redirect('/myfavorites')
+    return redirect('/playlists')
 
-# if __name__ == '__main__':
-#     app.run(host='0.0.0.0', debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True)

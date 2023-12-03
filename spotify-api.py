@@ -58,10 +58,35 @@ def callback():
     session['refresh_token'] = token_info['refresh_token']
     session['expires_at'] = datetime.datetime.now().timestamp() + token_info['expires_in']
 
-    return redirect('/playlists')
+    return redirect('/myfavorites')
 
-# @app.route('/myfavorites')
-# def get_myfavorites():
+@app.route('/myfavorites')
+def get_myfavorites():
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    if datetime.datetime.now().timestamp() > session['expires_at']:
+        return redirect('/refresh-token')
+    
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}"
+    }
+
+    response = requests.get(API_BASE_URL + 'me/top/tracks', headers=headers)
+    topsongs = response.json()
+
+    # names = ''
+    # count = 1
+
+    # for item in playlists['items']:
+    #     names += str(count) + ": " + item['name']
+    #     names += '\n'
+    #     count += 1 
+
+    return jsonify(topsongs)
+
+    # return jsonify(playlists)
+    # return names
 
 
 @app.route('/playlists')

@@ -72,21 +72,21 @@ def get_myfavorites():
         'Authorization': f"Bearer {session['access_token']}"
     }
 
-    response = requests.get(API_BASE_URL + 'me/top/tracks', headers=headers)
+    response = requests.get(API_BASE_URL + 'me/top/tracks', headers=headers, time_range=long_term, limit=50)
     topsongs = response.json()
 
-    # names = ''
-    # count = 1
+    names = ''
+    count = 1
 
-    # for item in playlists['items']:
-    #     names += str(count) + ": " + item['name']
-    #     names += '\n'
-    #     count += 1 
+    for item in topsongs['items']:
+        names += str(count) + ": " + item['name']
+        names += '\n'
+        count += 1 
 
-    return jsonify(topsongs)
+    # return jsonify(topsongs)
 
     # return jsonify(playlists)
-    # return names
+    return names
 
 
 @app.route('/playlists')

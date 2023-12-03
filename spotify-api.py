@@ -79,7 +79,13 @@ def get_myfavorites():
     count = 1
 
     for item in topsongs['items']:
-        names += str(count) + ": " + item['name'] + " by " + item['artists']
+        artists = ''
+        for i in range(len(item['artists'])):
+            if i == len(item['artists'])-1:
+                artists += item['artists'][i]['name']
+            else:
+                artists += item['artists'][i]['name'] + ", "
+        names += str(count) + ": " + item['name'] + " by " + artists
         names += "; Popularity score: "+ str(item['popularity'])
         names += '<br>'
         count += 1 
@@ -137,5 +143,5 @@ def refresh_token():
 
     return redirect('/myfavorites')
 
-# if __name__ == '__main__':
-#     app.run(host='0.0.0.0', debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True)

@@ -19,7 +19,7 @@ API_BASE_URL = 'https://api.spotify.com/v1/'
 
 @app.route('/')
 def index():
-    return "Welcome to my Spotify App!! <a href='/login'>Login with Spotify</a>"
+    return "Hey hey friends!! Welcome to my Spotify App :D I wanted to be able to look at some more of my listening data! <br> <a href='/login'>Login with Spotify</a>"
 
 @app.route('/login')
 def login():
@@ -79,7 +79,13 @@ def get_myfavorites():
     count = 1
 
     for item in topsongs['items']:
-        names += str(count) + ": " + item['name']
+        artists = ''
+        for i in range(len(item['artists'])):
+            if i == len(item['artists'])-1:
+                artists += item['artists'][i]['name']
+            else:
+                artists += item['artists'][i]['name'] + ", "
+        names += str(count) + ": " + item['name'] + " by " + artists
         names += "; Popularity score: "+ str(item['popularity'])
         names += '<br>'
         count += 1 
@@ -135,7 +141,7 @@ def refresh_token():
     session['access_token'] = new_token_info['access_token']
     session['expires_at'] = datetime.datetime.now().timestamp() + new_token_info['expires_in']
 
-    return redirect('/playlists')
+    return redirect('/myfavorites')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

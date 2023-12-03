@@ -90,11 +90,78 @@ def get_myfavorites():
         names += '<br>'
         count += 1 
 
+    medium = get_tracks_medium()
+    short = get_tracks_short()
+
+    return "Here are your top tracks and their popularity scores (calculated using number of plays/how recent plays are) using collected data over several years: <br><br>"+names+medium+short
+
+def get_tracks_medium():
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    if datetime.datetime.now().timestamp() > session['expires_at']:
+        return redirect('/refresh-token')
+    
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}"
+    }
+
+    response = requests.get(API_BASE_URL + 'me/top/tracks?time_range=medium_term&limit=50', headers=headers)
+    topsongs = response.json()
+
+    names = ''
+    count = 1
+
+    for item in topsongs['items']:
+        artists = ''
+        for i in range(len(item['artists'])):
+            if i == len(item['artists'])-1:
+                artists += item['artists'][i]['name']
+            else:
+                artists += item['artists'][i]['name'] + ", "
+        names += str(count) + ": " + item['name'] + " by " + artists
+        names += "; Popularity score: "+ str(item['popularity'])
+        names += '<br>'
+        count += 1 
+
     # return jsonify(topsongs)
 
     # return jsonify(playlists)
-    return "Here are your top tracks and their popularity scores (calculated using number of plays/how recent plays are) using collected data over several years: <br><br>"+names
+    return "<br><br>Here is the same information over the last 6 months or so: <br><br>"+names
 
+def get_tracks_short():
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    if datetime.datetime.now().timestamp() > session['expires_at']:
+        return redirect('/refresh-token')
+    
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}"
+    }
+
+    response = requests.get(API_BASE_URL + 'me/top/tracks?time_range=short_term&limit=50', headers=headers)
+    topsongs = response.json()
+
+    names = ''
+    count = 1
+
+    for item in topsongs['items']:
+        artists = ''
+        for i in range(len(item['artists'])):
+            if i == len(item['artists'])-1:
+                artists += item['artists'][i]['name']
+            else:
+                artists += item['artists'][i]['name'] + ", "
+        names += str(count) + ": " + item['name'] + " by " + artists
+        names += "; Popularity score: "+ str(item['popularity'])
+        names += '<br>'
+        count += 1 
+
+    # return jsonify(topsongs)
+
+    # return jsonify(playlists)
+    return "<br><br>And again for the last 4 weeks: <br><br>"+names
 
 @app.route('/playlists')
 def get_playlists():
@@ -143,5 +210,5 @@ def refresh_token():
 
     return redirect('/myfavorites')
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', debug=True)

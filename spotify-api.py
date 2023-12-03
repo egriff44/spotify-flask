@@ -19,7 +19,7 @@ API_BASE_URL = 'https://api.spotify.com/v1/'
 
 @app.route('/')
 def index():
-    return "Welcome to my Spotify App!! <a href='/login'>Login with Spotify</a>"
+    return "Hey hey friends!! Welcome to my Spotify App :D I wanted to be able to look at some more of my listening data! <br> <a href='/login'>Login with Spotify</a>"
 
 @app.route('/login')
 def login():
@@ -79,7 +79,7 @@ def get_myfavorites():
     count = 1
 
     for item in topsongs['items']:
-        names += str(count) + ": " + item['name']
+        names += str(count) + ": " + item['name'] + " by " + item['artists']
         names += "; Popularity score: "+ str(item['popularity'])
         names += '<br>'
         count += 1 

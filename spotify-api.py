@@ -62,6 +62,33 @@ def callback():
 
 @app.route('/favorites_overview')
 def get_overall_favorites():
+    welcome_string = "Here are your 10 top tracks and artists and their popularity scores (calculated using number of plays/how recent plays are) using collected data over several years: <br><br>"
+    current_page = 'overview'
+    return get_data_for_time('long_term', welcome_string, current_page, 10)
+
+
+@app.route('/myfavorites_longterm')
+def get_myfavorites():
+    welcome_string = "Here are your top tracks and their popularity scores (calculated using number of plays/how recent plays are) using collected data over several years: <br><br>"
+    current_page = 'long'
+    return get_data_for_time('long_term', welcome_string, current_page, 50)
+
+
+@app.route('/myfavorites_mediumterm')
+def get_tracks_medium():
+    welcome_string = "Here are your top tracks and their popularity scores (calculated using number of plays/how recent plays are) using collected data over several years: <br><br>"
+    current_page = 'medium'
+    return get_data_for_time('medium_term', welcome_string, current_page, 50)
+   
+
+@app.route('/myfavorites_shortterm')
+def get_tracks_short():
+    welcome_string = "Here are your top tracks and their popularity scores (calculated using number of plays/how recent plays are) using collected data over 4 weeks or so: <br><br>"
+    current_page = 'short'
+    return get_data_for_time('short_term', welcome_string, current_page, 50)
+
+
+def get_data_for_time(time_period, welcome_string, current_page, count):
     if 'access_token' not in session:
         return redirect('/login')
     
@@ -72,8 +99,8 @@ def get_overall_favorites():
         'Authorization': f"Bearer {session['access_token']}"
     }
 
-    songsresponse = requests.get(API_BASE_URL + 'me/top/tracks?time_range=long_term&limit=10', headers=headers)
-    artistsresponse = requests.get(API_BASE_URL + 'me/top/artists?time_range=long_term&limit=10', headers=headers)
+    songsresponse = requests.get(API_BASE_URL + 'me/top/tracks?time_range='+time_period+'&limit='+str(count), headers=headers)
+    artistsresponse = requests.get(API_BASE_URL + 'me/top/artists?time_range='+time_period+'&limit='+str(count), headers=headers)
     topsongs = songsresponse.json()
     topartists = artistsresponse.json()
 
@@ -81,15 +108,27 @@ def get_overall_favorites():
     names = ''
     count = 1
     counter = 1
+    genres = {}
 
     for item in topartists['items']:
         people += str(counter) + ": " + item['name']
         people += "; Popularity score: "+ str(item['popularity'])
         people += '<br>'
         counter += 1
+        artist_info = get_artist_info(item['name'], item['id'])
+        for genre in artist_info['genres']:
+            if genre in genres.keys():
+                genres[genre] += 1
+            else:
+                genres[genre] = 1
+
+    genre_count = 0
+    genre_information = '<br><br>Your top genres were:<br>'
+    for key in dict(sorted(genres.items(), key=lambda item: item[1], reverse=True)).keys():
+        genre_count += 1
+        genre_information += str(genre_count)+') '+key+', showing up '+str(genres[key])+' times<br>'
 
     for item in topsongs['items']:
-        print(item)
         if count == 1:
             top_song = item['id']
             top_name = item['name']
@@ -107,143 +146,21 @@ def get_overall_favorites():
     top_features = get_track_audio_features(top_name, top_song)
     top_info = "Your favorite song, "+top_features['name']+', was in '+top_features['overall_key']+"."
 
-    welcome_string = "Here are your 10 top tracks and artists and their popularity scores (calculated using number of plays/how recent plays are) using collected data over several years: <br><br>"
     artist_intro = "First up, the artists!<br><br>"
     tracks_intro = "Next, the tracks!<br><br>"
+    redirect_to_long = "<br><br>Look at data for <a href='/myfavorites_longterm'>the last few years</a>."
     redirect_to_medium = "<br><br>Look at data for <a href='/myfavorites_mediumterm'>the last 6 months</a>."
     redirect_to_small = "<br><br>Look at data for <a href='/myfavorites_shortterm'>the last 4 weeks</a>."
-    redirect_to_long = "<br><br><br>Look at full data for <a href='/myfavorites_longterm'>the last few years</a>."
-
-    return welcome_string+artist_intro+people+'<br>'+tracks_intro+names+'<br>'+top_info+redirect_to_long+redirect_to_medium+redirect_to_small
-
-@app.route('/myfavorites_longterm')
-def get_myfavorites():
-    if 'access_token' not in session:
-        return redirect('/login')
-    
-    if datetime.datetime.now().timestamp() > session['expires_at']:
-        return redirect('/refresh-token')
-    
-    headers = {
-        'Authorization': f"Bearer {session['access_token']}"
-    }
-
-    response = requests.get(API_BASE_URL + 'me/top/tracks?time_range=long_term&limit=50', headers=headers)
-    topsongs = response.json()
-
-    names = ''
-    count = 1
-
-    for item in topsongs['items']:
-        if count == 1:
-            top_song = item['id']
-            top_name = item['name']
-        artists = ''
-        for i in range(len(item['artists'])):
-            if i == len(item['artists'])-1:
-                artists += item['artists'][i]['name']
-            else:
-                artists += item['artists'][i]['name'] + ", "
-        names += str(count) + ": " + item['name'] + " by " + artists
-        names += "; Popularity score: "+ str(item['popularity'])
-        names += '<br>'
-        count += 1 
-
-    top_features = get_track_audio_features(top_name, top_song)
-    top_info = "Your favorite song, "+top_features['name']+', was in '+top_features['overall_key']+"."
-
-    welcome_string = "Here are your top tracks and their popularity scores (calculated using number of plays/how recent plays are) using collected data over several years: <br><br>"
-    redirect_to_medium = "<br><br><br> Look at data for <a href='/myfavorites_mediumterm'>the last 6 months</a>."
-    redirect_to_small = "<br><br>Look at data for <a href='/myfavorites_shortterm'>the last 4 weeks</a>."
     redirect_home = "<br><br>Go back to <a href='/favorites_overview'>the summary page</a>."
 
-    return welcome_string+names+'<br>'+top_info+redirect_to_medium+redirect_to_small+redirect_home
-
-@app.route('/myfavorites_mediumterm')
-def get_tracks_medium():
-    if 'access_token' not in session:
-        return redirect('/login')
-    
-    if datetime.datetime.now().timestamp() > session['expires_at']:
-        return redirect('/refresh-token')
-    
-    headers = {
-        'Authorization': f"Bearer {session['access_token']}"
-    }
-
-    response = requests.get(API_BASE_URL + 'me/top/tracks?time_range=medium_term&limit=50', headers=headers)
-    topsongs = response.json()
-
-    names = ''
-    count = 1
-
-    for item in topsongs['items']:
-        if count == 1:
-            top_song = item['id']
-            top_name = item['name']
-        artists = ''
-        for i in range(len(item['artists'])):
-            if i == len(item['artists'])-1:
-                artists += item['artists'][i]['name']
-            else:
-                artists += item['artists'][i]['name'] + ", "
-        names += str(count) + ": " + item['name'] + " by " + artists
-        names += "; Popularity score: "+ str(item['popularity'])
-        names += '<br>'
-        count += 1
-
-    top_features = get_track_audio_features(top_name, top_song)
-    top_info = "Your favorite song, "+top_features['name']+', was in '+top_features['overall_key']+"."
-
-    welcome_string = "Here are your top tracks and their popularity scores (calculated using number of plays/how recent plays are) using collected data over 6 or so months: <br><br>"
-    redirect_to_long = "<br><br><br> Look at data for <a href='/myfavorites_longterm'>the last few years</a>."
-    redirect_to_small = "<br><br>Look at data for <a href='/myfavorites_shortterm'>the last 4 weeks</a>."
-    redirect_home = "<br><br>Go back to <a href='/favorites_overview'>the summary page</a>."
-
-    return welcome_string+names+'<br>'+top_info+redirect_to_long+redirect_to_small+redirect_home
-
-@app.route('/myfavorites_shortterm')
-def get_tracks_short():
-    if 'access_token' not in session:
-        return redirect('/login')
-    
-    if datetime.datetime.now().timestamp() > session['expires_at']:
-        return redirect('/refresh-token')
-    
-    headers = {
-        'Authorization': f"Bearer {session['access_token']}"
-    }
-
-    response = requests.get(API_BASE_URL + 'me/top/tracks?time_range=short_term&limit=50', headers=headers)
-    topsongs = response.json()
-
-    names = ''
-    count = 1
-
-    for item in topsongs['items']:
-        if count == 1:
-            top_song = item['id']
-            top_name = item['name']
-        artists = ''
-        for i in range(len(item['artists'])):
-            if i == len(item['artists'])-1:
-                artists += item['artists'][i]['name']
-            else:
-                artists += item['artists'][i]['name'] + ", "
-        names += str(count) + ": " + item['name'] + " by " + artists
-        names += "; Popularity score: "+ str(item['popularity'])
-        names += '<br>'
-        count += 1
-
-    top_features = get_track_audio_features(top_name, top_song)
-    top_info = "Your favorite song, "+top_features['name']+', was in '+top_features['overall_key']+"."
-
-    welcome_string = "Here are your top tracks and their popularity scores (calculated using number of plays/how recent plays are) using collected data over 4 weeks or so: <br><br>"
-    redirect_to_long = "<br><br><br> Look at data for <a href='/myfavorites_longterm'>the last few years</a>."
-    redirect_to_medium = "<br><br>Look at data for <a href='/myfavorites_mediumterm'>the last 6 months</a>."
-    redirect_home = "<br><br>Go back to <a href='/favorites_overview'>the summary page</a>."
-
-    return welcome_string+names+'<br>'+top_info+redirect_to_long+redirect_to_medium+redirect_home
+    if current_page == 'overview':
+        return welcome_string+artist_intro+people+'<br>'+tracks_intro+names+'<br>'+top_info+genre_information+redirect_to_long+redirect_to_medium+redirect_to_small
+    elif current_page == 'long':
+        return welcome_string+artist_intro+people+'<br>'+tracks_intro+names+'<br>'+top_info+genre_information+redirect_to_medium+redirect_to_small+redirect_home
+    elif current_page == 'medium':
+        return welcome_string+artist_intro+people+'<br>'+tracks_intro+names+'<br>'+top_info+genre_information+redirect_to_long+redirect_to_small+redirect_home
+    else:
+        return welcome_string+artist_intro+people+'<br>'+tracks_intro+names+'<br>'+top_info+genre_information+redirect_to_long+redirect_to_medium+redirect_home
 
 def get_track_audio_features(name, id):
     if 'access_token' not in session:
@@ -269,7 +186,26 @@ def get_track_audio_features(name, id):
     info['overall_key'] = info['key']+' '+info['mode']
 
     return info
-    # return "<br><br>And again for the last 4 weeks: <br><br>"+names
+
+def get_artist_info(name, id):
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    if datetime.datetime.now().timestamp() > session['expires_at']:
+        return redirect('/refresh-token')
+    
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}"
+    }
+
+    response = requests.get(API_BASE_URL + 'artists/'+id, headers=headers)
+    artist_info = response.json()
+
+    info = artist_info
+    info['name'] = name
+
+    return info
+    
 
 @app.route('/playlists')
 def get_playlists():
@@ -318,5 +254,5 @@ def refresh_token():
 
     return redirect('/myfavorites')
 
-# if __name__ == '__main__':
-#     app.run(host='0.0.0.0', debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True)
